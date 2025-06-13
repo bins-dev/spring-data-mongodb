@@ -37,6 +37,7 @@ import org.springframework.data.geo.Polygon;
 import org.springframework.data.geo.Shape;
 import org.springframework.data.mongodb.core.convert.MongoCustomConversions;
 import org.springframework.data.mongodb.core.convert.MongoWriter;
+import org.springframework.data.mongodb.core.geo.GeoJson;
 import org.springframework.data.mongodb.core.geo.Sphere;
 import org.springframework.data.mongodb.core.mapping.MongoMappingContext;
 import org.springframework.data.mongodb.core.mapping.MongoPersistentProperty;
@@ -53,9 +54,9 @@ import org.springframework.data.repository.query.Parameters;
 import org.springframework.data.repository.query.QueryMethod;
 import org.springframework.data.repository.query.parser.PartTree;
 import org.springframework.data.util.TypeInformation;
+import org.springframework.util.ClassUtils;
 
 import com.mongodb.DBRef;
-import org.springframework.util.ClassUtils;
 
 /**
  * @author Christoph Strobl
@@ -133,19 +134,21 @@ class AotQueryCreator {
 			} else {
 				placeholders = new ArrayList<>();
 				Parameters<?, ?> parameters = queryMethod.getParameters();
-				for(Parameter parameter : parameters.toList()) {
-					if(ClassUtils.isAssignable(Point.class, parameter.getType())) {
+				for (Parameter parameter : parameters.toList()) {
+					if (ClassUtils.isAssignable(GeoJson.class, parameter.getType())) {
+						placeholders.add(parameter.getIndex(), new GeoJsonPlaceholder(parameter.getIndex(), ""));
+					}
+					else if (ClassUtils.isAssignable(Point.class, parameter.getType())) {
 						placeholders.add(parameter.getIndex(), new PointPlaceholder(parameter.getIndex()));
-					} else if(ClassUtils.isAssignable(Circle.class, parameter.getType())) {
+					} else if (ClassUtils.isAssignable(Circle.class, parameter.getType())) {
 						placeholders.add(parameter.getIndex(), new CirclePlaceholder(parameter.getIndex()));
-					} else if(ClassUtils.isAssignable(Box.class, parameter.getType())) {
+					} else if (ClassUtils.isAssignable(Box.class, parameter.getType())) {
 						placeholders.add(parameter.getIndex(), new BoxPlaceholder(parameter.getIndex()));
-					} else if(ClassUtils.isAssignable(Sphere.class, parameter.getType())) {
+					} else if (ClassUtils.isAssignable(Sphere.class, parameter.getType())) {
 						placeholders.add(parameter.getIndex(), new SpherePlaceholder(parameter.getIndex()));
-					} else if(ClassUtils.isAssignable(Polygon.class, parameter.getType())) {
+					} else if (ClassUtils.isAssignable(Polygon.class, parameter.getType())) {
 						placeholders.add(parameter.getIndex(), new PolygonPlaceholder(parameter.getIndex()));
 					}
-
 					else {
 						placeholders.add(parameter.getIndex(), Placeholder.indexed(parameter.getIndex()));
 					}
@@ -238,6 +241,7 @@ class AotQueryCreator {
 	static class CirclePlaceholder extends Circle implements Placeholder {
 
 		int index;
+
 		public CirclePlaceholder(int index) {
 			super(new PointPlaceholder(index), Distance.of(1, Metrics.NEUTRAL)); //
 			this.index = index;
@@ -257,6 +261,7 @@ class AotQueryCreator {
 	static class SpherePlaceholder extends Sphere implements Placeholder {
 
 		int index;
+
 		public SpherePlaceholder(int index) {
 			super(new PointPlaceholder(index), Distance.of(1, Metrics.NEUTRAL)); //
 			this.index = index;
@@ -270,6 +275,37 @@ class AotQueryCreator {
 		@Override
 		public String toString() {
 			return getValue().toString();
+		}
+	}
+
+	static class GeoJsonPlaceholder implements Placeholder, GeoJson<List<Placeholder>>, Shape {
+
+		int index;
+		String type;
+
+		public GeoJsonPlaceholder(int index, String type) {
+			this.index = index;
+			this.type = type;
+		}
+
+		@Override
+		public Object getValue() {
+			return "?%s".formatted(index);
+		}
+
+		@Override
+		public String toString() {
+			return getValue().toString();
+		}
+
+		@Override
+		public String getType() {
+			return type;
+		}
+
+		@Override
+		public List<Placeholder> getCoordinates() {
+			return List.of();
 		}
 	}
 
@@ -296,7 +332,8 @@ class AotQueryCreator {
 		int index;
 
 		public PolygonPlaceholder(int index) {
-			super(new PointPlaceholder(index), new PointPlaceholder(index), new PointPlaceholder(index), new PointPlaceholder(index));
+			super(new PointPlaceholder(index), new PointPlaceholder(index), new PointPlaceholder(index),
+					new PointPlaceholder(index));
 			this.index = index;
 		}
 

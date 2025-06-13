@@ -44,6 +44,7 @@ import org.springframework.data.mongodb.core.aggregation.AggregationOptions;
 import org.springframework.data.mongodb.core.aggregation.AggregationPipeline;
 import org.springframework.data.mongodb.core.aggregation.AggregationResults;
 import org.springframework.data.mongodb.core.aggregation.TypedAggregation;
+import org.springframework.data.mongodb.core.geo.GeoJson;
 import org.springframework.data.mongodb.core.geo.Sphere;
 import org.springframework.data.mongodb.core.mapping.MongoSimpleTypes;
 import org.springframework.data.mongodb.core.query.BasicQuery;
@@ -786,7 +787,9 @@ class MongoCodeBlocks {
 			this.arguments = new ArrayList<>();
 			for (MongoParameter parameter : queryMethod.getParameters().getBindableParameters()) {
 				String parameterName = context.getParameterName(parameter.getIndex());
-				if (ClassUtils.isAssignable(Circle.class, parameter.getType())) {
+				if (ClassUtils.isAssignable(GeoJson.class, parameter.getType())) {
+					arguments.add(CodeBlock.of(parameterName));
+				} else if (ClassUtils.isAssignable(Circle.class, parameter.getType())) {
 					arguments.add(CodeBlock.builder().add(
 							"$1T.of($1T.of($2L.getCenter().getX(), $2L.getCenter().getY()), $2L.getRadius().getNormalizedValue())",
 							List.class, parameterName).build());
@@ -802,14 +805,13 @@ class MongoCodeBlocks {
 							"$1T.of($1T.of($2L.getCenter().getX(), $2L.getCenter().getY()), $2L.getRadius().getNormalizedValue())",
 							List.class, parameterName).build());
 				} else if (ClassUtils.isAssignable(Polygon.class, parameter.getType())) {
+
 					// $polygon: [ [ <x1> , <y1> ], [ <x2> , <y2> ], [ <x3> , <y3> ], ... ]
 					String localVar = context.localVariable("_p");
 					arguments.add(
 							CodeBlock.builder().add("$1L.getPoints().stream().map($2L -> $3T.of($2L.getX(), $2L.getY())).toList()",
 									parameterName, localVar, List.class).build());
-				}
-
-				else {
+				} else {
 					arguments.add(CodeBlock.of(parameterName));
 				}
 			}

@@ -71,7 +71,6 @@ import org.bson.types.ObjectId;
 import org.jspecify.annotations.NullUnmarked;
 import org.jspecify.annotations.Nullable;
 import org.springframework.core.convert.converter.Converter;
-import org.springframework.data.geo.Circle;
 import org.springframework.data.mongodb.CodecRegistryProvider;
 import org.springframework.data.mongodb.core.mapping.FieldName;
 import org.springframework.data.mongodb.core.mapping.FieldName.Type;
@@ -1094,17 +1093,18 @@ public class BsonUtils {
 		public void encode(BsonWriter writer, GeoCommand value, EncoderContext encoderContext) {
 
 			if (writer instanceof SpringJsonWriter sjw) {
-				writer.writeStartDocument();
-				writer.writeName(value.getCommand());
-				if (value.getShape() instanceof Placeholder p) { // maybe we should wrap input to use geo command object
-					sjw.writePlaceholder(p.toString());
-//					Circle c = null;
-//					List.of(c.getCenter(), c.getRadius())
-//					;
-
-//					createQuery("{'location.coordinates':{'$geoWithin':{'$center':?0}}}", new Object[]{ List.of(circle.getCenter(), circle.getRadius()))
+				if (!value.getCommand().equals("$geometry")) {
+					writer.writeStartDocument();
+					writer.writeName(value.getCommand());
+					if (value.getShape() instanceof Placeholder p) { // maybe we should wrap input to use geo command object
+						sjw.writePlaceholder(p.toString());
+					}
+					writer.writeEndDocument();
+				} else {
+					if (value.getShape() instanceof Placeholder p) { // maybe we should wrap input to use geo command object
+						sjw.writePlaceholder(p.toString());
+					}
 				}
-				writer.writeEndDocument();
 			} else {
 				writer.writeString(value.getCommand(), value.getShape().toString());
 			}

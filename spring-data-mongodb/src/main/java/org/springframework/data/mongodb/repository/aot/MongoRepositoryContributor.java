@@ -15,7 +15,15 @@
  */
 package org.springframework.data.mongodb.repository.aot;
 
-import static org.springframework.data.mongodb.repository.aot.MongoCodeBlocks.*;
+import static org.springframework.data.mongodb.repository.aot.MongoCodeBlocks.QueryCodeBlockBuilder;
+import static org.springframework.data.mongodb.repository.aot.MongoCodeBlocks.aggregationBlockBuilder;
+import static org.springframework.data.mongodb.repository.aot.MongoCodeBlocks.aggregationExecutionBlockBuilder;
+import static org.springframework.data.mongodb.repository.aot.MongoCodeBlocks.deleteExecutionBlockBuilder;
+import static org.springframework.data.mongodb.repository.aot.MongoCodeBlocks.geoNearBlockBuilder;
+import static org.springframework.data.mongodb.repository.aot.MongoCodeBlocks.queryBlockBuilder;
+import static org.springframework.data.mongodb.repository.aot.MongoCodeBlocks.queryExecutionBlockBuilder;
+import static org.springframework.data.mongodb.repository.aot.MongoCodeBlocks.updateBlockBuilder;
+import static org.springframework.data.mongodb.repository.aot.MongoCodeBlocks.updateExecutionBlockBuilder;
 
 import java.lang.reflect.Method;
 import java.util.Locale;
@@ -25,6 +33,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
 import org.springframework.core.annotation.AnnotatedElementUtils;
+import org.springframework.data.geo.GeoPage;
 import org.springframework.data.mongodb.core.MongoOperations;
 import org.springframework.data.mongodb.core.aggregation.AggregationUpdate;
 import org.springframework.data.mongodb.core.mapping.MongoMappingContext;
@@ -42,6 +51,7 @@ import org.springframework.data.repository.query.QueryMethod;
 import org.springframework.data.repository.query.parser.PartTree;
 import org.springframework.javapoet.CodeBlock;
 import org.springframework.javapoet.TypeName;
+import org.springframework.util.ClassUtils;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 
@@ -95,7 +105,8 @@ public class MongoRepositoryContributor extends RepositoryContributor {
 			return aggregationMethodContributor(queryMethod, aggregation);
 		}
 
-		if(queryMethod.isGeoNearQuery() || (queryMethod.getParameters().getMaxDistanceIndex() != -1 && queryMethod.getReturnType().isCollectionLike())) {
+		if (queryMethod.isGeoNearQuery() || (queryMethod.getParameters().getMaxDistanceIndex() != -1
+				&& queryMethod.getReturnType().isCollectionLike())) {
 			NearQueryInteraction near = new NearQueryInteraction();
 			return nearQueryMethodContributor(queryMethod, near);
 		}
@@ -159,8 +170,8 @@ public class MongoRepositoryContributor extends RepositoryContributor {
 		} else {
 
 			PartTree partTree = new PartTree(queryMethod.getName(), repositoryInformation.getDomainType());
-			query = new QueryInteraction(queryCreator.createQuery(partTree, queryMethod),
-					partTree.isCountProjection(), partTree.isDelete(), partTree.isExistsProjection());
+			query = new QueryInteraction(queryCreator.createQuery(partTree, queryMethod), partTree.isCountProjection(),
+					partTree.isDelete(), partTree.isExistsProjection());
 		}
 
 		if (queryAnnotation != null && StringUtils.hasText(queryAnnotation.sort())) {
@@ -177,7 +188,7 @@ public class MongoRepositoryContributor extends RepositoryContributor {
 
 		// TODO: namedQuery, Regex queries, queries accepting Shapes (e.g. within) or returning arrays.
 		boolean skip = method.isSearchQuery() || method.getName().toLowerCase(Locale.ROOT).contains("regex")
-				|| method.getReturnType().getType().isArray();
+				|| method.getReturnType().getType().isArray() || ClassUtils.isAssignable(GeoPage.class, method.getReturnType().getType());
 
 		if (skip && logger.isDebugEnabled()) {
 			logger.debug("Skipping AOT generation for [%s]. Method is either returning an array or a geo-near, regex query"
@@ -187,14 +198,14 @@ public class MongoRepositoryContributor extends RepositoryContributor {
 	}
 
 	private static MethodContributor<MongoQueryMethod> nearQueryMethodContributor(MongoQueryMethod queryMethod,
-		NearQueryInteraction interaction) {
+			NearQueryInteraction interaction) {
 
 		return MethodContributor.forQueryMethod(queryMethod).withMetadata(interaction).contribute(context -> {
 
 			CodeBlock.Builder builder = CodeBlock.builder();
 
 			builder.add(geoNearBlockBuilder(context, queryMethod).usingQueryVariableName("nearQuery").build());
-//			builder.add(aggregationExecutionBlockBuilder(context, queryMethod).referencing("aggregation").build());
+			// builder.add(aggregationExecutionBlockBuilder(context, queryMethod).referencing("aggregation").build());
 
 			return builder.build();
 		});

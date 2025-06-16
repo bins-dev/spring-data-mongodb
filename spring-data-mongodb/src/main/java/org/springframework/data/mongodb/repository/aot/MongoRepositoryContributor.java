@@ -101,6 +101,10 @@ public class MongoRepositoryContributor extends RepositoryContributor {
 		MongoQueryMethod queryMethod = new MongoQueryMethod(method, getRepositoryInformation(), getProjectionFactory(),
 				mappingContext);
 
+		if (backoff(queryMethod)) {
+			return null;
+		}
+
 		if (queryMethod.hasAnnotatedAggregation()) {
 			AggregationInteraction aggregation = new AggregationInteraction(queryMethod.getAnnotatedAggregation());
 			return aggregationMethodContributor(queryMethod, aggregation);
@@ -127,9 +131,7 @@ public class MongoRepositoryContributor extends RepositoryContributor {
 			}
 		}
 
-		if (backoff(queryMethod)) {
-			return null;
-		}
+
 
 		if (query.isDelete()) {
 			return deleteMethodContributor(queryMethod, query);

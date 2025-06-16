@@ -31,7 +31,6 @@ import java.util.Optional;
 import org.bson.Document;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,7 +49,6 @@ import org.springframework.data.domain.Window;
 import org.springframework.data.geo.Box;
 import org.springframework.data.geo.Circle;
 import org.springframework.data.geo.Distance;
-import org.springframework.data.geo.GeoPage;
 import org.springframework.data.geo.GeoResult;
 import org.springframework.data.geo.GeoResults;
 import org.springframework.data.geo.Metrics;
@@ -695,18 +693,21 @@ class MongoRepositoryContributorTests {
 	}
 
 	@Test
-	@Disabled("too complicated")
 	void testNearReturningGeoPage() {
 
+		assertThatExceptionOfType(NoSuchMethodException.class)
+				.isThrownBy(() -> fragment.findByLocationCoordinatesNear(new Point(-73.99, 40.73),
+						Distance.of(2000, Metrics.KILOMETERS), PageRequest.of(0, 1)));
+
 		// TODO: still need to create the count and extract the total elements
-		GeoPage<User> page1 = fragment.findByLocationCoordinatesNear(new Point(-73.99, 40.73),
-				Distance.of(2000, Metrics.KILOMETERS), PageRequest.of(0, 1));
-
-		assertThat(page1.hasNext()).isTrue();
-
-		GeoPage<User> page2 = fragment.findByLocationCoordinatesNear(new Point(-73.99, 40.73),
-				Distance.of(2000, Metrics.KILOMETERS), page1.nextPageable());
-		assertThat(page2.hasNext()).isFalse();
+		// GeoPage<User> page1 = fragment.findByLocationCoordinatesNear(new Point(-73.99, 40.73),
+		// Distance.of(2000, Metrics.KILOMETERS), PageRequest.of(0, 1));
+		//
+		// assertThat(page1.hasNext()).isTrue();
+		//
+		// GeoPage<User> page2 = fragment.findByLocationCoordinatesNear(new Point(-73.99, 40.73),
+		// Distance.of(2000, Metrics.KILOMETERS), page1.nextPageable());
+		// assertThat(page2.hasNext()).isFalse();
 	}
 
 	/**

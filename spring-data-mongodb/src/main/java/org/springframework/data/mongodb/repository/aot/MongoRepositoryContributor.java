@@ -15,15 +15,16 @@
  */
 package org.springframework.data.mongodb.repository.aot;
 
-import static org.springframework.data.mongodb.repository.aot.MongoCodeBlocks.QueryCodeBlockBuilder;
 import static org.springframework.data.mongodb.repository.aot.MongoCodeBlocks.aggregationBlockBuilder;
 import static org.springframework.data.mongodb.repository.aot.MongoCodeBlocks.aggregationExecutionBlockBuilder;
 import static org.springframework.data.mongodb.repository.aot.MongoCodeBlocks.deleteExecutionBlockBuilder;
 import static org.springframework.data.mongodb.repository.aot.MongoCodeBlocks.geoNearBlockBuilder;
+import static org.springframework.data.mongodb.repository.aot.MongoCodeBlocks.geoNearExecutionBlockBuilder;
 import static org.springframework.data.mongodb.repository.aot.MongoCodeBlocks.queryBlockBuilder;
 import static org.springframework.data.mongodb.repository.aot.MongoCodeBlocks.queryExecutionBlockBuilder;
 import static org.springframework.data.mongodb.repository.aot.MongoCodeBlocks.updateBlockBuilder;
 import static org.springframework.data.mongodb.repository.aot.MongoCodeBlocks.updateExecutionBlockBuilder;
+import static org.springframework.data.mongodb.repository.aot.QueryBlocks.QueryCodeBlockBuilder;
 
 import java.lang.reflect.Method;
 import java.util.Locale;
@@ -188,7 +189,8 @@ public class MongoRepositoryContributor extends RepositoryContributor {
 
 		// TODO: namedQuery, Regex queries, queries accepting Shapes (e.g. within) or returning arrays.
 		boolean skip = method.isSearchQuery() || method.getName().toLowerCase(Locale.ROOT).contains("regex")
-				|| method.getReturnType().getType().isArray() || ClassUtils.isAssignable(GeoPage.class, method.getReturnType().getType());
+				|| method.getReturnType().getType().isArray()
+				|| ClassUtils.isAssignable(GeoPage.class, method.getReturnType().getType());
 
 		if (skip && logger.isDebugEnabled()) {
 			logger.debug("Skipping AOT generation for [%s]. Method is either returning an array or a geo-near, regex query"
@@ -204,8 +206,9 @@ public class MongoRepositoryContributor extends RepositoryContributor {
 
 			CodeBlock.Builder builder = CodeBlock.builder();
 
-			builder.add(geoNearBlockBuilder(context, queryMethod).usingQueryVariableName("nearQuery").build());
-			// builder.add(aggregationExecutionBlockBuilder(context, queryMethod).referencing("aggregation").build());
+			String variableName = "nearQuery";
+			builder.add(geoNearBlockBuilder(context, queryMethod).usingQueryVariableName(variableName).build());
+			builder.add(geoNearExecutionBlockBuilder(context, queryMethod).referencing(variableName).build());
 
 			return builder.build();
 		});
@@ -218,9 +221,10 @@ public class MongoRepositoryContributor extends RepositoryContributor {
 
 			CodeBlock.Builder builder = CodeBlock.builder();
 
+			String variableName = "aggregation";
 			builder.add(aggregationBlockBuilder(context, queryMethod).stages(aggregation)
-					.usingAggregationVariableName("aggregation").build());
-			builder.add(aggregationExecutionBlockBuilder(context, queryMethod).referencing("aggregation").build());
+					.usingAggregationVariableName(variableName).build());
+			builder.add(aggregationExecutionBlockBuilder(context, queryMethod).referencing(variableName).build());
 
 			return builder.build();
 		});

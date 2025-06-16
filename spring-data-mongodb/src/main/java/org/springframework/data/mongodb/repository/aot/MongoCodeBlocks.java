@@ -21,6 +21,8 @@ import java.util.regex.Pattern;
 
 import org.bson.Document;
 import org.jspecify.annotations.Nullable;
+import org.springframework.core.annotation.MergedAnnotation;
+import org.springframework.data.mongodb.repository.ReadPreference;
 import org.springframework.data.mongodb.repository.aot.AggregationBlocks.AggregationCodeBlockBuilder;
 import org.springframework.data.mongodb.repository.aot.AggregationBlocks.AggregationExecutionCodeBlockBuilder;
 import org.springframework.data.mongodb.repository.aot.DeleteBlocks.DeleteExecutionCodeBlockBuilder;
@@ -188,5 +190,16 @@ class MongoCodeBlocks {
 
 	static boolean containsPlaceholder(String source) {
 		return PARAMETER_BINDING_PATTERN.matcher(source).find();
+	}
+
+	static void appendReadPreference(AotQueryMethodGenerationContext context, Builder builder, String queryVariableName) {
+
+		MergedAnnotation<ReadPreference> readPreferenceAnnotation = context.getAnnotation(ReadPreference.class);
+		String readPreference = readPreferenceAnnotation.isPresent() ? readPreferenceAnnotation.getString("value") : null;
+
+		if (StringUtils.hasText(readPreference)) {
+			builder.addStatement("$L.withReadPreference($T.valueOf($S))", queryVariableName,
+				com.mongodb.ReadPreference.class, readPreference);
+		}
 	}
 }

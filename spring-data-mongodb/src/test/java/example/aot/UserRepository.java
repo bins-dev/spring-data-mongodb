@@ -43,6 +43,7 @@ import org.springframework.data.geo.Point;
 import org.springframework.data.geo.Polygon;
 import org.springframework.data.mongodb.core.aggregation.AggregationResults;
 import org.springframework.data.mongodb.core.geo.GeoJsonPolygon;
+import org.springframework.data.mongodb.core.geo.Sphere;
 import org.springframework.data.mongodb.repository.Aggregation;
 import org.springframework.data.mongodb.repository.Hint;
 import org.springframework.data.mongodb.repository.Person;
@@ -117,6 +118,8 @@ public interface UserRepository extends CrudRepository<User, String> {
 	List<User> findByLocationCoordinatesNear(Point location);
 
 	List<User> findByLocationCoordinatesWithin(Circle circle);
+
+	List<User> findByLocationCoordinatesWithin(Sphere circle);
 
 	List<User> findByLocationCoordinatesWithin(Box box);
 

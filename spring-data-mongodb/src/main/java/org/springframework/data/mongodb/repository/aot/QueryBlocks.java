@@ -34,7 +34,6 @@ import org.springframework.data.mongodb.core.geo.Sphere;
 import org.springframework.data.mongodb.core.query.BasicQuery;
 import org.springframework.data.mongodb.repository.Hint;
 import org.springframework.data.mongodb.repository.Meta;
-import org.springframework.data.mongodb.repository.ReadPreference;
 import org.springframework.data.mongodb.repository.query.MongoParameters.MongoParameter;
 import org.springframework.data.mongodb.repository.query.MongoQueryExecution.PagedExecution;
 import org.springframework.data.mongodb.repository.query.MongoQueryExecution.SlicedExecution;
@@ -249,13 +248,7 @@ class QueryBlocks {
 				builder.addStatement("$L.withHint($S)", queryVariableName, hint);
 			}
 
-			MergedAnnotation<ReadPreference> readPreferenceAnnotation = context.getAnnotation(ReadPreference.class);
-			String readPreference = readPreferenceAnnotation.isPresent() ? readPreferenceAnnotation.getString("value") : null;
-
-			if (StringUtils.hasText(readPreference)) {
-				builder.addStatement("$L.withReadPreference($T.valueOf($S))", queryVariableName,
-						com.mongodb.ReadPreference.class, readPreference);
-			}
+			MongoCodeBlocks.appendReadPreference(context, builder, queryVariableName);
 
 			MergedAnnotation<Meta> metaAnnotation = context.getAnnotation(Meta.class);
 			if (metaAnnotation.isPresent()) {
@@ -297,6 +290,8 @@ class QueryBlocks {
 					builder.add(iterator.next());
 					if (iterator.hasNext()) {
 						builder.add(", ");
+					} else {
+						builder.add(" ");
 					}
 				}
 				builder.add("});\n");

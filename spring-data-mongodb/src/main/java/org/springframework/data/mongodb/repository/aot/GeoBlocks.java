@@ -85,6 +85,8 @@ class GeoBlocks {
 				builder.addStatement("$L.with($L)", variableName, context.getPageableParameterName());
 			}
 
+			MongoCodeBlocks.appendReadPreference(context, builder, variableName);
+
 			return builder.build();
 		}
 

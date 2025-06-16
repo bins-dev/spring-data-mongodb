@@ -131,8 +131,6 @@ public class MongoRepositoryContributor extends RepositoryContributor {
 			}
 		}
 
-
-
 		if (query.isDelete()) {
 			return deleteMethodContributor(queryMethod, query);
 		}
@@ -216,7 +214,7 @@ public class MongoRepositoryContributor extends RepositoryContributor {
 		});
 	}
 
-	private static MethodContributor<MongoQueryMethod> aggregationMethodContributor(MongoQueryMethod queryMethod,
+	static MethodContributor<MongoQueryMethod> aggregationMethodContributor(MongoQueryMethod queryMethod,
 			AggregationInteraction aggregation) {
 
 		return MethodContributor.forQueryMethod(queryMethod).withMetadata(aggregation).contribute(context -> {
@@ -232,7 +230,7 @@ public class MongoRepositoryContributor extends RepositoryContributor {
 		});
 	}
 
-	private static MethodContributor<MongoQueryMethod> updateMethodContributor(MongoQueryMethod queryMethod,
+	static MethodContributor<MongoQueryMethod> updateMethodContributor(MongoQueryMethod queryMethod,
 			UpdateInteraction update) {
 
 		return MethodContributor.forQueryMethod(queryMethod).withMetadata(update).contribute(context -> {
@@ -261,7 +259,7 @@ public class MongoRepositoryContributor extends RepositoryContributor {
 		});
 	}
 
-	private static MethodContributor<MongoQueryMethod> aggregationUpdateMethodContributor(MongoQueryMethod queryMethod,
+	static MethodContributor<MongoQueryMethod> aggregationUpdateMethodContributor(MongoQueryMethod queryMethod,
 			AggregationUpdateInteraction update) {
 
 		return MethodContributor.forQueryMethod(queryMethod).withMetadata(update).contribute(context -> {
@@ -287,7 +285,7 @@ public class MongoRepositoryContributor extends RepositoryContributor {
 		});
 	}
 
-	private static MethodContributor<MongoQueryMethod> deleteMethodContributor(MongoQueryMethod queryMethod,
+	static MethodContributor<MongoQueryMethod> deleteMethodContributor(MongoQueryMethod queryMethod,
 			QueryInteraction query) {
 
 		return MethodContributor.forQueryMethod(queryMethod).withMetadata(query).contribute(context -> {
@@ -302,7 +300,7 @@ public class MongoRepositoryContributor extends RepositoryContributor {
 		});
 	}
 
-	private static MethodContributor<MongoQueryMethod> queryMethodContributor(MongoQueryMethod queryMethod,
+	static MethodContributor<MongoQueryMethod> queryMethodContributor(MongoQueryMethod queryMethod,
 			QueryInteraction query) {
 
 		return MethodContributor.forQueryMethod(queryMethod).withMetadata(query).contribute(context -> {

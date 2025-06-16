@@ -18,6 +18,7 @@ package org.springframework.data.mongodb.repository.aot;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.repository.aot.generate.QueryMetadata;
 import org.springframework.util.StringUtils;
 
@@ -30,14 +31,20 @@ import org.springframework.util.StringUtils;
 class NearQueryInteraction extends MongoInteraction implements QueryMetadata {
 
 	private final InteractionType interactionType;
+	private final QueryInteraction query;
 
-	NearQueryInteraction() {
+	NearQueryInteraction(QueryInteraction query) {
 		interactionType = InteractionType.QUERY;
+		this.query = query;
 	}
 
 	@Override
 	InteractionType getExecutionType() {
 		return interactionType;
+	}
+
+	public QueryInteraction getQuery() {
+		return query;
 	}
 
 	@Override

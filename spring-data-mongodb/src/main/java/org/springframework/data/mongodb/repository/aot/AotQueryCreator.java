@@ -49,6 +49,7 @@ import org.springframework.data.mongodb.core.query.UpdateDefinition;
 import org.springframework.data.mongodb.repository.query.ConvertingParameterAccessor;
 import org.springframework.data.mongodb.repository.query.MongoParameterAccessor;
 import org.springframework.data.mongodb.repository.query.MongoQueryCreator;
+import org.springframework.data.mongodb.repository.query.MongoQueryMethod;
 import org.springframework.data.repository.query.Parameter;
 import org.springframework.data.repository.query.Parameters;
 import org.springframework.data.repository.query.QueryMethod;
@@ -80,8 +81,11 @@ class AotQueryCreator {
 	@SuppressWarnings("NullAway")
 	StringQuery createQuery(PartTree partTree, QueryMethod queryMethod) {
 
+
+		boolean geoNear = queryMethod instanceof MongoQueryMethod mqm ? mqm.isGeoNearQuery() : false;
+
 		Query query = new MongoQueryCreator(partTree,
-				new PlaceholderConvertingParameterAccessor(new PlaceholderParameterAccessor(queryMethod)), mappingContext)
+				new PlaceholderConvertingParameterAccessor(new PlaceholderParameterAccessor(queryMethod)), mappingContext, geoNear, queryMethod.isSearchQuery())
 				.createQuery();
 
 		if (partTree.isLimiting()) {

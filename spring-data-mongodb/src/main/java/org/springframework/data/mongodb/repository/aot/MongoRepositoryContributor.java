@@ -110,14 +110,14 @@ public class MongoRepositoryContributor extends RepositoryContributor {
 			return aggregationMethodContributor(queryMethod, aggregation);
 		}
 
-		if (queryMethod.isGeoNearQuery() || (queryMethod.getParameters().getMaxDistanceIndex() != -1
-				&& queryMethod.getReturnType().isCollectionLike())) {
-			NearQueryInteraction near = new NearQueryInteraction();
-			return nearQueryMethodContributor(queryMethod, near);
-		}
-
 		QueryInteraction query = createStringQuery(getRepositoryInformation(), queryMethod,
 				AnnotatedElementUtils.findMergedAnnotation(method, Query.class), method.getParameterCount());
+
+		if (queryMethod.isGeoNearQuery() || (queryMethod.getParameters().getMaxDistanceIndex() != -1
+				&& queryMethod.getReturnType().isCollectionLike())) {
+			NearQueryInteraction near = new NearQueryInteraction(query);
+			return nearQueryMethodContributor(queryMethod, near);
+		}
 
 		if (queryMethod.hasAnnotatedQuery()) {
 			if (StringUtils.hasText(queryMethod.getAnnotatedQuery())
@@ -206,8 +206,16 @@ public class MongoRepositoryContributor extends RepositoryContributor {
 
 			CodeBlock.Builder builder = CodeBlock.builder();
 
-			String variableName = "nearQuery";
+			String variableName = context.localVariable("nearQuery");
 			builder.add(geoNearBlockBuilder(context, queryMethod).usingQueryVariableName(variableName).build());
+
+			if (!context.getBindableParameterNames().isEmpty()) {
+				String filterQueryVariableName = context.localVariable("filterQuery");
+				builder.add(queryBlockBuilder(context, queryMethod).usingQueryVariableName(filterQueryVariableName)
+						.filter(interaction.getQuery()).build());
+				builder.addStatement("$L.query($L)", variableName, filterQueryVariableName);
+			}
+
 			builder.add(geoNearExecutionBlockBuilder(context, queryMethod).referencing(variableName).build());
 
 			return builder.build();

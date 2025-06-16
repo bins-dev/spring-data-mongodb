@@ -129,6 +129,8 @@ public interface UserRepository extends CrudRepository<User, String> {
 
 	GeoResults<User> findByLocationCoordinatesNear(Point point, Distance maxDistance);
 
+	GeoResults<User> findByLocationCoordinatesNearAndLastname(Point point, Distance maxDistance, String lastname);
+
 	List<GeoResult<User>> findUserAsListByLocationCoordinatesNear(Point point, Distance maxDistance);
 
 	GeoResults<User> findByLocationCoordinatesNear(Point point, Range<Distance> distance);

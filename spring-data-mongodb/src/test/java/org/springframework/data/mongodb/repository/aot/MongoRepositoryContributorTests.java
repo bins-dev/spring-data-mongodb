@@ -59,6 +59,7 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.AggregationResults;
 import org.springframework.data.mongodb.core.geo.GeoJsonPoint;
 import org.springframework.data.mongodb.core.geo.GeoJsonPolygon;
+import org.springframework.data.mongodb.repository.aot.AotFragmentTestConfigurationSupport.MethodNotImplementedException;
 import org.springframework.data.mongodb.test.util.Client;
 import org.springframework.data.mongodb.test.util.MongoClientExtension;
 import org.springframework.data.mongodb.test.util.MongoTestUtils;
@@ -676,6 +677,14 @@ class MongoRepositoryContributorTests {
 	}
 
 	@Test
+	void testNearWithAdditionalFilterQueryAsGeoResult() {
+
+		GeoResults<User> users = fragment.findByLocationCoordinatesNearAndLastname(new Point(-73.99, 40.73),
+				Distance.of(50, Metrics.KILOMETERS), "Organa");
+		assertThat(users).extracting(GeoResult::getContent).extracting(User::getUsername).containsExactly("leia");
+	}
+
+	@Test
 	void testNearReturningListOfGeoResult() {
 
 		List<GeoResult<User>> users = fragment.findUserAsListByLocationCoordinatesNear(new Point(-73.99, 40.73),
@@ -695,7 +704,7 @@ class MongoRepositoryContributorTests {
 	@Test
 	void testNearReturningGeoPage() {
 
-		assertThatExceptionOfType(NoSuchMethodException.class)
+		assertThatExceptionOfType(MethodNotImplementedException.class)
 				.isThrownBy(() -> fragment.findByLocationCoordinatesNear(new Point(-73.99, 40.73),
 						Distance.of(2000, Metrics.KILOMETERS), PageRequest.of(0, 1)));
 

@@ -118,6 +118,21 @@ public class QueryMethodContributionUnitTests {
 				.contains("NearQuery.near(point)") //
 				.contains("nearQuery.maxDistance(maxDistance).in(maxDistance.getMetric())") //
 				.contains(".withReadPreference(com.mongodb.ReadPreference.valueOf(\"NEAREST\")") //
+				.doesNotContain(".query(") //
+				.contains(".near(nearQuery).all()");
+	}
+
+	@Test
+	void rendersNearQueryWithFilterForGeoResults() throws NoSuchMethodException {
+
+		MethodSpec methodSpec = codeOf(UserRepository.class, "findByLocationCoordinatesNearAndLastname", Point.class,
+				Distance.class, String.class);
+
+		assertThat(methodSpec.toString()) //
+				.contains("NearQuery.near(point)") //
+				.contains("nearQuery.maxDistance(maxDistance).in(maxDistance.getMetric())") //
+				.contains("filterQuery = createQuery(\"{'lastname':?0}\", new java.lang.Object[]{ lastname })") //
+				.contains("nearQuery.query(filterQuery)") //
 				.contains(".near(nearQuery).all()");
 	}
 
@@ -151,6 +166,5 @@ public class QueryMethodContributionUnitTests {
 
 		@ReadPreference("NEAREST")
 		GeoResults<User> findByLocationCoordinatesNear(Point point, Distance maxDistance);
-
 	}
 }

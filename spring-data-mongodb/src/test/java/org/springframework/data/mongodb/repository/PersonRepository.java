@@ -221,6 +221,7 @@ public interface PersonRepository extends MongoRepository<Person, String>, Query
 	List<Person> findByNamedQuery(String firstname);
 
 	GeoResults<Person> findByLocationNear(Point point, Distance maxDistance);
+	GeoResults<Person> findByLocationNearAndLastname(Point point, Distance maxDistance, String Lastname);
 
 	// DATAMONGO-1110
 	GeoResults<Person> findPersonByLocationNear(Point point, Range<Distance> distance);

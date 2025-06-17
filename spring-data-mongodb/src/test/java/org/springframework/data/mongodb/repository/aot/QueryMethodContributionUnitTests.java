@@ -21,10 +21,14 @@ import example.aot.User;
 import example.aot.UserRepository;
 
 import java.lang.reflect.Method;
+import java.util.Arrays;
 
 import javax.lang.model.element.Modifier;
 
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Range;
 import org.springframework.data.geo.Box;
 import org.springframework.data.geo.Circle;
 import org.springframework.data.geo.Distance;
@@ -118,8 +122,40 @@ public class QueryMethodContributionUnitTests {
 				.contains("NearQuery.near(point)") //
 				.contains("nearQuery.maxDistance(maxDistance).in(maxDistance.getMetric())") //
 				.contains(".withReadPreference(com.mongodb.ReadPreference.valueOf(\"NEAREST\")") //
-				.doesNotContain(".query(") //
-				.contains(".near(nearQuery).all()");
+				.doesNotContain("nearQuery.query(") //
+				.contains(".near(nearQuery)") //
+				.contains("return nearFinder.all()");
+	}
+
+	@Test
+	void rendersNearQueryWithDistanceRangeForGeoResults() throws NoSuchMethodException {
+
+		MethodSpec methodSpec = codeOf(UserRepository.class, "findByLocationCoordinatesNear", Point.class,
+			Range.class);
+
+		assertThat(methodSpec.toString()) //
+			.contains("NearQuery.near(point)") //
+			.contains("if(distance.getLowerBound().isBounded())") //
+			.contains("nearQuery.minDistance(min).in(min.getMetric())") //
+			.contains("if(distance.getUpperBound().isBounded())") //
+			.contains("nearQuery.maxDistance(max).in(max.getMetric())") //
+			.contains(".near(nearQuery)") //
+			.contains("return nearFinder.all()");
+	}
+
+	@Test
+	void rendersNearQueryReturningGeoPage() throws NoSuchMethodException {
+
+		MethodSpec methodSpec = codeOf(UserRepository.class, "findByLocationCoordinatesNear", Point.class, Distance.class,
+				Pageable.class);
+
+		assertThat(methodSpec.toString()) //
+				.contains("NearQuery.near(point)") //
+				.contains("nearQuery.maxDistance(maxDistance).in(maxDistance.getMetric())") //
+				.doesNotContain("nearQuery.query(") //
+				.contains("var geoResult = nearFinder.all()") //
+				.contains("PageableExecutionUtils.getPage(geoResult.getContent(), pageable, () -> nearFinder.count())")
+				.contains("GeoPage<>(geoResult, pageable, resultPage.getTotalElements())");
 	}
 
 	@Test
@@ -133,7 +169,8 @@ public class QueryMethodContributionUnitTests {
 				.contains("nearQuery.maxDistance(maxDistance).in(maxDistance.getMetric())") //
 				.contains("filterQuery = createQuery(\"{'lastname':?0}\", new java.lang.Object[]{ lastname })") //
 				.contains("nearQuery.query(filterQuery)") //
-				.contains(".near(nearQuery).all()");
+				.contains(".near(nearQuery)") //
+				.contains("return nearFinder.all()");
 	}
 
 	private static MethodSpec codeOf(Class<?> repository, String methodName, Class<?>... args)
@@ -145,6 +182,10 @@ public class QueryMethodContributionUnitTests {
 		MongoRepositoryContributor contributor = new MongoRepositoryContributor(repoContext);
 		MethodContributor<? extends QueryMethod> methodContributor = contributor.contributeQueryMethod(method);
 
+		if (methodContributor == null) {
+			Assertions.fail("No contribution for method %s.%s(%s)".formatted(repository.getSimpleName(), methodName,
+					Arrays.stream(args).map(Class::getSimpleName).toList()));
+		}
 		AotRepositoryFragmentMetadata metadata = new AotRepositoryFragmentMetadata(ClassName.get(UserRepository.class));
 		metadata.addField(
 				FieldSpec.builder(MongoOperations.class, "mongoOperations", Modifier.PRIVATE, Modifier.FINAL).build());

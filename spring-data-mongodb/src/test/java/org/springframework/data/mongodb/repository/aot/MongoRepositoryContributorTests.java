@@ -49,6 +49,7 @@ import org.springframework.data.domain.Window;
 import org.springframework.data.geo.Box;
 import org.springframework.data.geo.Circle;
 import org.springframework.data.geo.Distance;
+import org.springframework.data.geo.GeoPage;
 import org.springframework.data.geo.GeoResult;
 import org.springframework.data.geo.GeoResults;
 import org.springframework.data.geo.Metrics;
@@ -59,7 +60,6 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.AggregationResults;
 import org.springframework.data.mongodb.core.geo.GeoJsonPoint;
 import org.springframework.data.mongodb.core.geo.GeoJsonPolygon;
-import org.springframework.data.mongodb.repository.aot.AotFragmentTestConfigurationSupport.MethodNotImplementedException;
 import org.springframework.data.mongodb.test.util.Client;
 import org.springframework.data.mongodb.test.util.MongoClientExtension;
 import org.springframework.data.mongodb.test.util.MongoTestUtils;
@@ -704,19 +704,14 @@ class MongoRepositoryContributorTests {
 	@Test
 	void testNearReturningGeoPage() {
 
-		assertThatExceptionOfType(MethodNotImplementedException.class)
-				.isThrownBy(() -> fragment.findByLocationCoordinatesNear(new Point(-73.99, 40.73),
-						Distance.of(2000, Metrics.KILOMETERS), PageRequest.of(0, 1)));
+		GeoPage<User> page1 = fragment.findByLocationCoordinatesNear(new Point(-73.99, 40.73),
+				Distance.of(2000, Metrics.KILOMETERS), PageRequest.of(0, 1));
 
-		// TODO: still need to create the count and extract the total elements
-		// GeoPage<User> page1 = fragment.findByLocationCoordinatesNear(new Point(-73.99, 40.73),
-		// Distance.of(2000, Metrics.KILOMETERS), PageRequest.of(0, 1));
-		//
-		// assertThat(page1.hasNext()).isTrue();
-		//
-		// GeoPage<User> page2 = fragment.findByLocationCoordinatesNear(new Point(-73.99, 40.73),
-		// Distance.of(2000, Metrics.KILOMETERS), page1.nextPageable());
-		// assertThat(page2.hasNext()).isFalse();
+		assertThat(page1.hasNext()).isTrue();
+
+		GeoPage<User> page2 = fragment.findByLocationCoordinatesNear(new Point(-73.99, 40.73),
+				Distance.of(2000, Metrics.KILOMETERS), page1.nextPageable());
+		assertThat(page2.hasNext()).isFalse();
 	}
 
 	/**

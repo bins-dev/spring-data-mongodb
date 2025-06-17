@@ -15,9 +15,6 @@
  */
 package org.springframework.data.mongodb.repository.aot;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
 import org.springframework.data.geo.Distance;
 import org.springframework.data.geo.GeoPage;
 import org.springframework.data.geo.GeoResults;
@@ -25,6 +22,7 @@ import org.springframework.data.mongodb.core.MongoOperations;
 import org.springframework.data.mongodb.core.query.NearQuery;
 import org.springframework.data.mongodb.repository.query.MongoQueryMethod;
 import org.springframework.data.repository.aot.generate.AotQueryMethodGenerationContext;
+import org.springframework.data.support.PageableExecutionUtils;
 import org.springframework.javapoet.CodeBlock;
 import org.springframework.util.ClassUtils;
 
@@ -38,14 +36,12 @@ class GeoBlocks {
 
 		private final AotQueryMethodGenerationContext context;
 		private final MongoQueryMethod queryMethod;
-		private final List<CodeBlock> arguments;
 
 		private String variableName;
 
 		GeoNearCodeBlockBuilder(AotQueryMethodGenerationContext context, MongoQueryMethod queryMethod) {
 
 			this.context = context;
-			this.arguments = context.getBindableParameterNames().stream().map(CodeBlock::of).collect(Collectors.toList());
 			this.queryMethod = queryMethod;
 		}
 
@@ -119,24 +115,31 @@ class GeoBlocks {
 			CodeBlock.Builder builder = CodeBlock.builder();
 			builder.add("\n");
 
-			// TODO: move the section below into dedicated executor builder
+			String executorVar = context.localVariable("nearFinder");
+			builder.addStatement("var $L = $L.query($T.class).near($L)", executorVar,
+					context.fieldNameOf(MongoOperations.class), context.getRepositoryInformation().getDomainType(),
+					queryVariableName);
+
 			if (ClassUtils.isAssignable(GeoPage.class, context.getReturnType().getRawClass())) {
-				builder.addStatement("return new $T<>($L.query($T.class).near($L).all())", GeoPage.class,
-						context.fieldNameOf(MongoOperations.class), context.getRepositoryInformation().getDomainType(),
-						queryVariableName);
-			}
 
-			else if (ClassUtils.isAssignable(GeoResults.class, context.getReturnType().getRawClass())) {
+				String geoResultVar = context.localVariable("geoResult");
+				builder.addStatement("var $L = $L.all()", geoResultVar, executorVar);
 
-				builder.addStatement("return $L.query($T.class).near($L).all()", context.fieldNameOf(MongoOperations.class),
-						context.getRepositoryInformation().getDomainType(), queryVariableName);
+				builder.beginControlFlow("if($L.isUnpaged())", context.getPageableParameterName());
+				builder.addStatement("return new $T<>($L)", GeoPage.class, geoResultVar);
+				builder.endControlFlow();
+
+				String pageVar = context.localVariable("resultPage");
+				builder.addStatement("var $L = $T.getPage($L.getContent(), $L, () -> $L.count())", pageVar,
+						PageableExecutionUtils.class, geoResultVar, context.getPageableParameterName(), executorVar);
+				builder.addStatement("return new $T<>($L, $L, $L.getTotalElements())", GeoPage.class, geoResultVar,
+						context.getPageableParameterName(), pageVar);
+			} else if (ClassUtils.isAssignable(GeoResults.class, context.getReturnType().getRawClass())) {
+				builder.addStatement("return $L.all()", executorVar);
 			} else {
-				builder.addStatement("return $L.query($T.class).near($L).all().getContent()",
-						context.fieldNameOf(MongoOperations.class), context.getRepositoryInformation().getDomainType(),
-						queryVariableName);
+				builder.addStatement("return $L.all().getContent()", executorVar);
 			}
 			return builder.build();
 		}
-
 	}
 }

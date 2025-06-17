@@ -666,6 +666,7 @@ public abstract class AbstractPersonRepositoryIntegrationTests implements Dirtie
 
 		assertThat(results.getContent()).isNotEmpty();
 		assertThat(results.getNumberOfElements()).isEqualTo(2);
+		assertThat(results.getTotalElements()).isEqualTo(5);
 		assertThat(results.isFirst()).isFalse();
 		assertThat(results.isLast()).isFalse();
 		assertThat(results.getAverageDistance().getMetric()).isEqualTo(Metrics.KILOMETERS);
@@ -723,6 +724,30 @@ public abstract class AbstractPersonRepositoryIntegrationTests implements Dirtie
 		assertThat(results.isFirst()).isFalse();
 		assertThat(results.isLast()).isTrue();
 		assertThat(results.getAverageDistance().getMetric()).isEqualTo(Metrics.KILOMETERS);
+	}
+
+	@Test
+	void executesGeoPageCountCorrectly() {
+
+		Point farAway = new Point(-73.9, 40.7);
+		Point here = new Point(-73.99, 40.73);
+
+		dave.setLocation(farAway);
+		oliver.setLocation(here);
+		carter.setLocation(here);
+		boyd.setLocation(here);
+		leroi.setLocation(here);
+
+		repository.saveAll(Arrays.asList(dave, oliver, carter, boyd, leroi));
+
+		GeoPage<Person> results = repository.findByLocationNear(new Point(-73.99, 40.73),
+				Distance.of(5, Metrics.KILOMETERS), PageRequest.of(1, 2));
+
+		assertThat(results.getContent()).isNotEmpty();
+		assertThat(results.getNumberOfElements()).isEqualTo(2);
+		assertThat(results.getTotalElements()).isEqualTo(4);
+		assertThat(results.isFirst()).isFalse();
+		assertThat(results.isLast()).isTrue();
 	}
 
 	@Test // DATAMONGO-1608

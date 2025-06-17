@@ -15,19 +15,19 @@
  */
 package org.springframework.data.mongodb.repository.aot;
 
-import static net.javacrumbs.jsonunit.assertj.JsonAssertions.*;
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 import example.aot.UserRepository;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -150,7 +150,7 @@ class MongoRepositoryMetadataTests {
 
 		assertThatJson(json).inPath("$.methods[?(@.name == 'findAllLastnames')].query").isArray().element(0).isObject()
 				.containsEntry("pipeline",
-						"[{ '$match' : { 'last_name' : { '$ne' : null } } }, { '$project': { '_id' : '$last_name' } }]");
+						List.of("{ '$match' : { 'last_name' : { '$ne' : null } } }", "{ '$project': { '_id' : '$last_name' } }"));
 	}
 
 	@Test // GH-4964
@@ -165,7 +165,7 @@ class MongoRepositoryMetadataTests {
 
 		assertThatJson(json).inPath("$.methods[?(@.name == 'findAndIncrementVisitsViaPipelineByLastname')].query").isArray()
 				.element(0).isObject().containsEntry("filter", "{'lastname':?0}").containsEntry("update-pipeline",
-						"[{ '$set' : { 'visits' : { '$ifNull' : [ {'$add' : [ '$visits', ?1 ] }, ?1 ] } } }]");
+						List.of("{ '$set' : { 'visits' : { '$ifNull' : [ {'$add' : [ '$visits', ?1 ] }, ?1 ] } } }"));
 	}
 
 	@Test // GH-4964

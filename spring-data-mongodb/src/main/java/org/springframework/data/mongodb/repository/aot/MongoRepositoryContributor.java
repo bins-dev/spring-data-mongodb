@@ -109,11 +109,11 @@ public class MongoRepositoryContributor extends RepositoryContributor {
 		}
 
 		QueryInteraction query = createStringQuery(getRepositoryInformation(), queryMethod,
-				AnnotatedElementUtils.findMergedAnnotation(method, Query.class), method.getParameterCount());
+				AnnotatedElementUtils.findMergedAnnotation(method, Query.class));
 
 		if (queryMethod.isGeoNearQuery() || (queryMethod.getParameters().getMaxDistanceIndex() != -1
 				&& queryMethod.getReturnType().isCollectionLike())) {
-			NearQueryInteraction near = new NearQueryInteraction(query);
+			NearQueryInteraction near = new NearQueryInteraction(query, queryMethod.getParameters());
 			return nearQueryMethodContributor(queryMethod, near);
 		}
 
@@ -160,7 +160,7 @@ public class MongoRepositoryContributor extends RepositoryContributor {
 
 	@SuppressWarnings("NullAway")
 	private QueryInteraction createStringQuery(RepositoryInformation repositoryInformation, MongoQueryMethod queryMethod,
-			@Nullable Query queryAnnotation, int parameterCount) {
+			@Nullable Query queryAnnotation) {
 
 		QueryInteraction query;
 		if (queryMethod.hasAnnotatedQuery() && queryAnnotation != null) {

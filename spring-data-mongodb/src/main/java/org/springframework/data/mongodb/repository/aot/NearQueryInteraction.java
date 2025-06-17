@@ -18,9 +18,8 @@ package org.springframework.data.mongodb.repository.aot;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.repository.query.MongoParameters;
 import org.springframework.data.repository.aot.generate.QueryMetadata;
-import org.springframework.util.StringUtils;
 
 /**
  * An {@link MongoInteraction} to execute a query.
@@ -32,10 +31,12 @@ class NearQueryInteraction extends MongoInteraction implements QueryMetadata {
 
 	private final InteractionType interactionType;
 	private final QueryInteraction query;
+	private final MongoParameters parameters;
 
-	NearQueryInteraction(QueryInteraction query) {
+	NearQueryInteraction(QueryInteraction query, MongoParameters parameters) {
 		interactionType = InteractionType.QUERY;
 		this.query = query;
+		this.parameters = parameters;
 	}
 
 	@Override
@@ -51,9 +52,17 @@ class NearQueryInteraction extends MongoInteraction implements QueryMetadata {
 	public Map<String, Object> serialize() {
 
 		Map<String, Object> serialized = new LinkedHashMap<>();
-
-
-
+		serialized.put("near", "?%s".formatted(parameters.getNearIndex()));
+		if (parameters.getRangeIndex() != -1) {
+			serialized.put("minDistance", "?%s".formatted(parameters.getRangeIndex()));
+			serialized.put("maxDistance", "?%s".formatted(parameters.getRangeIndex()));
+		} else if (parameters.getMaxDistanceIndex() != -1) {
+			serialized.put("minDistance", "?%s".formatted(parameters.getMaxDistanceIndex()));
+		}
+		Object filter = query.serialize().get("filter"); // TODO: filter position index can be off due to bindable params
+		if (filter != null) {
+			serialized.put("filter", filter);
+		}
 		return serialized;
 	}
 }

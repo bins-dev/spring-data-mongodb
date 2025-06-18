@@ -613,28 +613,28 @@ class MongoRepositoryContributorTests {
 				.withMessageContaining("'locale' is invalid");
 	}
 
-	@Test
+	@Test // GH-5004
 	void testNear() {
 
 		List<User> users = fragment.findByLocationCoordinatesNear(new Point(-73.99171, 40.738868));
 		assertThat(users).extracting(User::getUsername).containsExactly("leia", "vader");
 	}
 
-	@Test
+	@Test // GH-5004
 	void testNearWithGeoJson() {
 
 		List<User> users = fragment.findByLocationCoordinatesNear(new GeoJsonPoint(-73.99171, 40.738868));
 		assertThat(users).extracting(User::getUsername).containsExactly("leia", "vader");
 	}
 
-	@Test
+	@Test // GH-5004
 	void testGeoWithinCircle() {
 
 		List<User> users = fragment.findByLocationCoordinatesWithin(new Circle(-78.99171, 45.738868, 170));
 		assertThat(users).extracting(User::getUsername).containsExactly("leia", "vader");
 	}
 
-	@Test
+	@Test // GH-5004
 	void testWithinBox() {
 
 		Box box = new Box(new Point(-78.99171, 35.738868), new Point(-68.99171, 45.738868));
@@ -643,7 +643,7 @@ class MongoRepositoryContributorTests {
 		assertThat(result).extracting(User::getUsername).containsExactly("leia", "vader");
 	}
 
-	@Test
+	@Test // GH-5004
 	void findsPeopleByLocationWithinPolygon() {
 
 		Point first = new Point(-78.99171, 35.738868);
@@ -655,7 +655,7 @@ class MongoRepositoryContributorTests {
 		assertThat(result).extracting(User::getUsername).containsExactly("leia", "vader");
 	}
 
-	@Test
+	@Test // GH-5004
 	void findsPeopleByLocationWithinGeoJsonPolygon() {
 
 		Point first = new Point(-78.99171, 35.738868);
@@ -668,7 +668,20 @@ class MongoRepositoryContributorTests {
 		assertThat(result).extracting(User::getUsername).containsExactly("leia", "vader");
 	}
 
-	@Test
+	@Test // GH-5004
+	void findsPeopleByLocationWithinSomeGenericGeoJsonObject() {
+
+		Point first = new Point(-78.99171, 35.738868);
+		Point second = new Point(-78.99171, 45.738868);
+		Point third = new Point(-68.99171, 45.738868);
+		Point fourth = new Point(-68.99171, 35.738868);
+
+		List<User> result = fragment
+				.findUserByLocationCoordinatesWithin(new GeoJsonPolygon(first, second, third, fourth, first));
+		assertThat(result).extracting(User::getUsername).containsExactly("leia", "vader");
+	}
+
+	@Test // GH-5004
 	void testNearWithGeoResult() {
 
 		GeoResults<User> users = fragment.findByLocationCoordinatesNear(new Point(-73.99, 40.73),
@@ -676,7 +689,7 @@ class MongoRepositoryContributorTests {
 		assertThat(users).extracting(GeoResult::getContent).extracting(User::getUsername).containsExactly("leia");
 	}
 
-	@Test
+	@Test // GH-5004
 	void testNearWithAdditionalFilterQueryAsGeoResult() {
 
 		GeoResults<User> users = fragment.findByLocationCoordinatesNearAndLastname(new Point(-73.99, 40.73),
@@ -684,7 +697,7 @@ class MongoRepositoryContributorTests {
 		assertThat(users).extracting(GeoResult::getContent).extracting(User::getUsername).containsExactly("leia");
 	}
 
-	@Test
+	@Test // GH-5004
 	void testNearReturningListOfGeoResult() {
 
 		List<GeoResult<User>> users = fragment.findUserAsListByLocationCoordinatesNear(new Point(-73.99, 40.73),
@@ -692,7 +705,7 @@ class MongoRepositoryContributorTests {
 		assertThat(users).extracting(GeoResult::getContent).extracting(User::getUsername).containsExactly("leia");
 	}
 
-	@Test
+	@Test // GH-5004
 	void testNearWithRange() {
 
 		Range<Distance> range = Distance.between(Distance.of(5, Metrics.KILOMETERS), Distance.of(2000, Metrics.KILOMETERS));
@@ -701,7 +714,7 @@ class MongoRepositoryContributorTests {
 		assertThat(users).extracting(GeoResult::getContent).extracting(User::getUsername).containsExactly("vader");
 	}
 
-	@Test
+	@Test // GH-5004
 	void testNearReturningGeoPage() {
 
 		GeoPage<User> page1 = fragment.findByLocationCoordinatesNear(new Point(-73.99, 40.73),

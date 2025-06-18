@@ -36,6 +36,7 @@ import org.springframework.data.geo.GeoResults;
 import org.springframework.data.geo.Point;
 import org.springframework.data.geo.Polygon;
 import org.springframework.data.mongodb.core.MongoOperations;
+import org.springframework.data.mongodb.core.geo.GeoJsonPolygon;
 import org.springframework.data.mongodb.core.geo.Sphere;
 import org.springframework.data.mongodb.repository.ReadPreference;
 import org.springframework.data.repository.Repository;
@@ -53,7 +54,7 @@ import org.springframework.javapoet.MethodSpec;
  */
 public class QueryMethodContributionUnitTests {
 
-	@Test
+	@Test // GH-5004
 	void rendersQueryForNearUsingPoint() throws NoSuchMethodException {
 
 		MethodSpec methodSpec = codeOf(UserRepository.class, "findByLocationCoordinatesNear", Point.class);
@@ -64,7 +65,7 @@ public class QueryMethodContributionUnitTests {
 				.contains("return finder.matching(filterQuery).all()");
 	}
 
-	@Test
+	@Test // GH-5004
 	void rendersQueryForWithinUsingCircle() throws NoSuchMethodException {
 
 		MethodSpec methodSpec = codeOf(UserRepository.class, "findByLocationCoordinatesWithin", Circle.class);
@@ -76,7 +77,7 @@ public class QueryMethodContributionUnitTests {
 				.contains("return finder.matching(filterQuery).all()");
 	}
 
-	@Test
+	@Test // GH-5004
 	void rendersQueryForWithinUsingSphere() throws NoSuchMethodException {
 
 		MethodSpec methodSpec = codeOf(UserRepository.class, "findByLocationCoordinatesWithin", Sphere.class);
@@ -88,7 +89,7 @@ public class QueryMethodContributionUnitTests {
 				.contains("return finder.matching(filterQuery).all()");
 	}
 
-	@Test
+	@Test // GH-5004
 	void rendersQueryForWithinUsingBox() throws NoSuchMethodException {
 
 		MethodSpec methodSpec = codeOf(UserRepository.class, "findByLocationCoordinatesWithin", Box.class);
@@ -100,7 +101,7 @@ public class QueryMethodContributionUnitTests {
 				.contains("return finder.matching(filterQuery).all()");
 	}
 
-	@Test
+	@Test // GH-5004
 	void rendersQueryForWithinUsingPolygon() throws NoSuchMethodException {
 
 		MethodSpec methodSpec = codeOf(UserRepository.class, "findByLocationCoordinatesWithin", Polygon.class);
@@ -112,7 +113,18 @@ public class QueryMethodContributionUnitTests {
 				.contains("return finder.matching(filterQuery).all()");
 	}
 
-	@Test
+	@Test // GH-5004
+	void rendersQueryForWithinUsingGeoJsonPolygon() throws NoSuchMethodException {
+
+		MethodSpec methodSpec = codeOf(UserRepository.class, "findByLocationCoordinatesWithin", GeoJsonPolygon.class);
+
+		assertThat(methodSpec.toString()) //
+				.contains("{'location.coordinates':{'$geoWithin':{'$geometry':?0}}") //
+				.contains("Object[]{ polygon }") //
+				.contains("return finder.matching(filterQuery).all()");
+	}
+
+	@Test // GH-5004
 	void rendersNearQueryForGeoResults() throws NoSuchMethodException {
 
 		MethodSpec methodSpec = codeOf(UserRepoWithMeta.class, "findByLocationCoordinatesNear", Point.class,
@@ -127,23 +139,22 @@ public class QueryMethodContributionUnitTests {
 				.contains("return nearFinder.all()");
 	}
 
-	@Test
+	@Test // GH-5004
 	void rendersNearQueryWithDistanceRangeForGeoResults() throws NoSuchMethodException {
 
-		MethodSpec methodSpec = codeOf(UserRepository.class, "findByLocationCoordinatesNear", Point.class,
-			Range.class);
+		MethodSpec methodSpec = codeOf(UserRepository.class, "findByLocationCoordinatesNear", Point.class, Range.class);
 
 		assertThat(methodSpec.toString()) //
-			.contains("NearQuery.near(point)") //
-			.contains("if(distance.getLowerBound().isBounded())") //
-			.contains("nearQuery.minDistance(min).in(min.getMetric())") //
-			.contains("if(distance.getUpperBound().isBounded())") //
-			.contains("nearQuery.maxDistance(max).in(max.getMetric())") //
-			.contains(".near(nearQuery)") //
-			.contains("return nearFinder.all()");
+				.contains("NearQuery.near(point)") //
+				.contains("if(distance.getLowerBound().isBounded())") //
+				.contains("nearQuery.minDistance(min).in(min.getMetric())") //
+				.contains("if(distance.getUpperBound().isBounded())") //
+				.contains("nearQuery.maxDistance(max).in(max.getMetric())") //
+				.contains(".near(nearQuery)") //
+				.contains("return nearFinder.all()");
 	}
 
-	@Test
+	@Test // GH-5004
 	void rendersNearQueryReturningGeoPage() throws NoSuchMethodException {
 
 		MethodSpec methodSpec = codeOf(UserRepository.class, "findByLocationCoordinatesNear", Point.class, Distance.class,
@@ -158,7 +169,7 @@ public class QueryMethodContributionUnitTests {
 				.contains("GeoPage<>(geoResult, pageable, resultPage.getTotalElements())");
 	}
 
-	@Test
+	@Test // GH-5004
 	void rendersNearQueryWithFilterForGeoResults() throws NoSuchMethodException {
 
 		MethodSpec methodSpec = codeOf(UserRepository.class, "findByLocationCoordinatesNearAndLastname", Point.class,

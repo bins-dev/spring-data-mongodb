@@ -42,6 +42,7 @@ import org.springframework.data.geo.GeoResults;
 import org.springframework.data.geo.Point;
 import org.springframework.data.geo.Polygon;
 import org.springframework.data.mongodb.core.aggregation.AggregationResults;
+import org.springframework.data.mongodb.core.geo.GeoJson;
 import org.springframework.data.mongodb.core.geo.GeoJsonPolygon;
 import org.springframework.data.mongodb.core.geo.Sphere;
 import org.springframework.data.mongodb.repository.Aggregation;
@@ -126,6 +127,8 @@ public interface UserRepository extends CrudRepository<User, String> {
 	List<User> findByLocationCoordinatesWithin(Polygon polygon);
 
 	List<User> findByLocationCoordinatesWithin(GeoJsonPolygon polygon);
+
+	List<User> findUserByLocationCoordinatesWithin(GeoJson<?> geoJson);
 
 	GeoResults<User> findByLocationCoordinatesNear(Point point, Distance maxDistance);
 

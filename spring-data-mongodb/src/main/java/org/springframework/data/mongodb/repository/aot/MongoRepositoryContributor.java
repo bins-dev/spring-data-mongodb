@@ -28,7 +28,6 @@ import static org.springframework.data.mongodb.repository.aot.QueryBlocks.QueryC
 
 import java.lang.reflect.Method;
 import java.util.Locale;
-import java.util.regex.Pattern;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -115,18 +114,6 @@ public class MongoRepositoryContributor extends RepositoryContributor {
 				&& queryMethod.getReturnType().isCollectionLike())) {
 			NearQueryInteraction near = new NearQueryInteraction(query, queryMethod.getParameters());
 			return nearQueryMethodContributor(queryMethod, near);
-		}
-
-		if (queryMethod.hasAnnotatedQuery()) {
-			if (StringUtils.hasText(queryMethod.getAnnotatedQuery())
-					&& Pattern.compile("[\\?:][#$]\\{.*\\}").matcher(queryMethod.getAnnotatedQuery()).find()) {
-
-				if (logger.isDebugEnabled()) {
-					logger.debug(
-							"Skipping AOT generation for [%s]. SpEL expressions are not supported".formatted(method.getName()));
-				}
-				return MethodContributor.forQueryMethod(queryMethod).metadataOnly(query);
-			}
 		}
 
 		if (query.isDelete()) {

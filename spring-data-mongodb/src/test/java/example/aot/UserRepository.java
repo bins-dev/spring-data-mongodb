@@ -47,11 +47,11 @@ import org.springframework.data.mongodb.core.geo.GeoJsonPolygon;
 import org.springframework.data.mongodb.core.geo.Sphere;
 import org.springframework.data.mongodb.repository.Aggregation;
 import org.springframework.data.mongodb.repository.Hint;
-import org.springframework.data.mongodb.repository.Person;
 import org.springframework.data.mongodb.repository.Query;
 import org.springframework.data.mongodb.repository.ReadPreference;
 import org.springframework.data.mongodb.repository.Update;
 import org.springframework.data.repository.CrudRepository;
+import org.springframework.data.repository.query.Param;
 
 /**
  * @author Christoph Strobl
@@ -178,6 +178,12 @@ public interface UserRepository extends CrudRepository<User, String> {
 
 	@Query("{ 'lastname' : { '$regex' : '^?0' } }")
 	Slice<User> findAnnotatedQuerySliceOfUsersByLastname(String lastname, Pageable pageable);
+
+	@Query("{ firstname : ?#{[0]} }")
+	List<User> findWithExpressionUsingParameterIndex(String firstname);
+
+	@Query("{ firstname : :#{#firstname} }")
+	List<User> findWithExpressionUsingParameterName(@Param("firstname") String firstname);
 
 	/* deletes */
 

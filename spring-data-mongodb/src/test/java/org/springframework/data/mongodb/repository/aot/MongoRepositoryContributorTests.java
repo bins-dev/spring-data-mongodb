@@ -334,6 +334,20 @@ class MongoRepositoryContributorTests {
 		assertThat(user).isNotNull().extracting(User::getUsername).isEqualTo("yoda");
 	}
 
+	@Test // GH-5006
+	void testAnnotatedFinderWithExpressionUsingParameterIndex() {
+
+		List<User> users = fragment.findWithExpressionUsingParameterIndex("Luke");
+		assertThat(users).extracting(User::getUsername).containsExactly("luke");
+	}
+
+	@Test // GH-5006
+	void testAnnotatedFinderWithExpressionUsingParameterName() {
+
+		List<User> users = fragment.findWithExpressionUsingParameterName("Luke");
+		assertThat(users).extracting(User::getUsername).containsExactly("luke");
+	}
+
 	@Test
 	void testAnnotatedCount() {
 

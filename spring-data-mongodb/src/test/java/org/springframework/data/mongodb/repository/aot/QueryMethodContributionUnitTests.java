@@ -184,6 +184,26 @@ public class QueryMethodContributionUnitTests {
 				.contains("return nearFinder.all()");
 	}
 
+	@Test // GH-5006
+	void rendersExpressionUsingParameterIndex() throws NoSuchMethodException {
+
+		MethodSpec methodSpec = codeOf(UserRepository.class, "findWithExpressionUsingParameterIndex", String.class);
+
+		assertThat(methodSpec.toString()) //
+				.contains("createQuery(\"{ firstname : ?#{[0]} }\"") //
+				.contains("Map.of(\"firstname\", firstname)");
+	}
+
+	@Test // GH-5006
+	void rendersExpressionUsingParameterName() throws NoSuchMethodException {
+
+		MethodSpec methodSpec = codeOf(UserRepository.class, "findWithExpressionUsingParameterName", String.class);
+
+		assertThat(methodSpec.toString()) //
+				.contains("createQuery(\"{ firstname : :#{#firstname} }\"") //
+				.contains("Map.of(\"firstname\", firstname)");
+	}
+
 	private static MethodSpec codeOf(Class<?> repository, String methodName, Class<?>... args)
 			throws NoSuchMethodException {
 

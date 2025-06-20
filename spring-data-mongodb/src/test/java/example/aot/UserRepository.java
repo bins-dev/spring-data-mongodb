@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import org.springframework.data.annotation.Id;
@@ -95,6 +96,8 @@ public interface UserRepository extends CrudRepository<User, String> {
 	List<User> findByVisitsExists(boolean exists);
 
 	List<User> findByLastnameNot(String lastname);
+
+	List<User> findByFirstnameRegex(Pattern pattern);
 
 	List<User> findTop2ByLastnameStartingWith(String lastname);
 

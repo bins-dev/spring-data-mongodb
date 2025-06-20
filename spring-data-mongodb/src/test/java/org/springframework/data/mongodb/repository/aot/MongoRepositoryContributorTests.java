@@ -27,6 +27,7 @@ import example.aot.UserRepository.UserAggregate;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.regex.Pattern;
 
 import org.bson.Document;
 import org.junit.jupiter.api.BeforeAll;
@@ -227,6 +228,13 @@ class MongoRepositoryContributorTests {
 
 		List<User> users = fragment.findByLastnameNot("Skywalker");
 		assertThat(users).extracting(User::getUsername).isNotEmpty().doesNotContain("luke", "vader");
+	}
+
+	@Test // GH-4939
+	void testRegex() {
+
+		List<User> lukes = fragment.findByFirstnameRegex(Pattern.compile(".*uk.*"));
+		assertThat(lukes).extracting(User::getUsername).containsExactly("luke");
 	}
 
 	@Test

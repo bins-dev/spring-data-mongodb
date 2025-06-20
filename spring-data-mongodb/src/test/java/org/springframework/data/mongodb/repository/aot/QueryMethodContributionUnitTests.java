@@ -22,6 +22,7 @@ import example.aot.UserRepository;
 
 import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.regex.Pattern;
 
 import javax.lang.model.element.Modifier;
 
@@ -202,6 +203,16 @@ public class QueryMethodContributionUnitTests {
 		assertThat(methodSpec.toString()) //
 				.contains("createQuery(\"{ firstname : :#{#firstname} }\"") //
 				.contains("Map.of(\"firstname\", firstname)");
+	}
+
+	@Test // GH-4939
+	void rendersRegexCriteria() throws NoSuchMethodException {
+
+		MethodSpec methodSpec = codeOf(UserRepository.class, "findByFirstnameRegex", Pattern.class);
+
+		assertThat(methodSpec.toString()) //
+			.contains("createQuery(\"{'firstname':{'$regex':?0}}\"") //
+			.contains("Object[]{ pattern }");
 	}
 
 	private static MethodSpec codeOf(Class<?> repository, String methodName, Class<?>... args)

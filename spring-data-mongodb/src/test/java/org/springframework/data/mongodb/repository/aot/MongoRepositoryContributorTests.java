@@ -78,6 +78,7 @@ import org.testcontainers.shaded.org.awaitility.Awaitility;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.IndexOptions;
 import com.mongodb.client.model.SearchIndexModel;
 import com.mongodb.client.model.SearchIndexType;
@@ -120,28 +121,49 @@ class MongoRepositoryContributorTests {
 		userCollection.createIndex(new Document("location.coordinates", "2d"), new IndexOptions());
 		userCollection.createIndex(new Document("location.coordinates", "2dsphere"), new IndexOptions());
 
+		Thread.sleep(250); // just wait a little or the index will be broken
+	}
+
+	/**
+	 * Create the vector search index and wait till it is queryable and actually serving data. Since this may slow down
+	 * tests quite a bit, better call it only when needed to run certain tests.
+	 */
+	private static void initializeVectorIndex() {
+
+		String indexName = "embedding.vector_cos";
+
 		Document searchIndex = new Document("fields",
 				List.of(new Document("type", "vector").append("path", "embedding").append("numDimensions", 5)
 						.append("similarity", "cosine"), new Document("type", "filter").append("path", "last_name")));
 
-		userCollection.createSearchIndexes(List.of(
-				new SearchIndexModel("embedding.vector_cos", searchIndex, SearchIndexType.of(new BsonString("vectorSearch")))));
+		MongoCollection<Document> userCollection = client.getDatabase(DB_NAME).getCollection(COLLECTION_NAME);
+		userCollection.createSearchIndexes(
+				List.of(new SearchIndexModel(indexName, searchIndex, SearchIndexType.of(new BsonString("vectorSearch")))));
 
+		// wait for search index to be queryable
 		Awaitility.await().atMost(Duration.ofSeconds(120)).pollInterval(Duration.ofMillis(200)).until(() -> {
 
 			List<Document> execute = userCollection
-					.aggregate(
-							List.of(Document.parse("{'$listSearchIndexes': { 'name' : '%s'}}".formatted("embedding.vector_cos"))))
+					.aggregate(List.of(Document.parse("{'$listSearchIndexes': { 'name' : '%s'}}".formatted(indexName))))
 					.into(new ArrayList<>());
 			for (Document doc : execute) {
-				if (doc.getString("name").equals("embedding.vector_cos")) {
+				if (doc.getString("name").equals(indexName)) {
 					return doc.getString("status").equals("READY");
 				}
 			}
 			return false;
 		});
 
-		Thread.sleep(250); // just wait a little or the index will be broken
+		Document $vectorSearch = new Document("$vectorSearch",
+				new Document("index", indexName).append("limit", 1).append("numCandidates", 20).append("path", "embedding")
+						.append("queryVector", List.of(1.0, 1.12345, 2.23456, 3.34567, 4.45678)));
+
+		// wait for search index to serve data
+		Awaitility.await().atMost(Duration.ofSeconds(120)).pollInterval(Duration.ofMillis(200)).until(() -> {
+			try (MongoCursor<Document> cursor = userCollection.aggregate(List.of($vectorSearch)).iterator()) {
+				return cursor.hasNext();
+			}
+		});
 	}
 
 	@BeforeEach
@@ -790,9 +812,9 @@ class MongoRepositoryContributorTests {
 	}
 
 	@Test
-	void vectorSearchFromAnnotation() throws InterruptedException {
+	void vectorSearchFromAnnotation() {
 
-		Thread.sleep(1000); // srly - reindex for vector search
+		initializeVectorIndex();
 
 		Vector vector = Vector.of(1.00000d, 1.12345d, 2.23456d, 3.34567d, 4.45678d);
 		SearchResults<User> results = fragment.annotatedVectorSearch("Skywalker", vector, Score.of(0.99), Limit.of(10));
@@ -801,9 +823,9 @@ class MongoRepositoryContributorTests {
 	}
 
 	@Test
-	void vectorSearchWithDerivedQuery() throws InterruptedException {
+	void vectorSearchWithDerivedQuery() {
 
-		Thread.sleep(1000); // srly - reindex for vector search
+		initializeVectorIndex();
 
 		Vector vector = Vector.of(1.00000d, 1.12345d, 2.23456d, 3.34567d, 4.45678d);
 		SearchResults<User> results = fragment.searchCosineByLastnameAndEmbeddingNear("Skywalker", vector, Score.of(0.98),
@@ -813,9 +835,9 @@ class MongoRepositoryContributorTests {
 	}
 
 	@Test
-	void vectorSearchReturningResultsAsList() throws InterruptedException {
+	void vectorSearchReturningResultsAsList() {
 
-		Thread.sleep(1000); // srly - reindex for vector search
+		initializeVectorIndex();
 
 		Vector vector = Vector.of(1.00000d, 1.12345d, 2.23456d, 3.34567d, 4.45678d);
 		List<User> results = fragment.searchAsListByLastnameAndEmbeddingNear("Skywalker", vector, Limit.of(10));
@@ -824,9 +846,9 @@ class MongoRepositoryContributorTests {
 	}
 
 	@Test
-	void vectorSearchWithLimitFromAnnotation() throws InterruptedException {
+	void vectorSearchWithLimitFromAnnotation() {
 
-		Thread.sleep(1000); // srly - reindex for vector search
+		initializeVectorIndex();
 
 		Vector vector = Vector.of(1.00000d, 1.12345d, 2.23456d, 3.34567d, 4.45678d);
 		SearchResults<User> results = fragment.searchByLastnameAndEmbeddingWithin("Skywalker", vector,
@@ -836,9 +858,9 @@ class MongoRepositoryContributorTests {
 	}
 
 	@Test
-	void vectorSearchWithSorting() throws InterruptedException {
+	void vectorSearchWithSorting() {
 
-		Thread.sleep(1000); // srly - reindex for vector search
+		initializeVectorIndex();
 
 		Vector vector = Vector.of(1.00000d, 1.12345d, 2.23456d, 3.34567d, 4.45678d);
 		SearchResults<User> results = fragment.searchByLastnameAndEmbeddingWithinOrderByFirstname("Skywalker", vector,
@@ -848,9 +870,9 @@ class MongoRepositoryContributorTests {
 	}
 
 	@Test
-	void vectorSearchWithLimitFromDerivedQuery() throws InterruptedException {
+	void vectorSearchWithLimitFromDerivedQuery() {
 
-		Thread.sleep(1000); // srly - reindex for vector search
+		initializeVectorIndex();
 
 		Vector vector = Vector.of(1.00000d, 1.12345d, 2.23456d, 3.34567d, 4.45678d);
 		SearchResults<User> results = fragment.searchTop1ByLastnameAndEmbeddingWithin("Skywalker", vector,

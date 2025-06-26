@@ -35,6 +35,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.jspecify.annotations.NullUnmarked;
+import org.springframework.core.ResolvableType;
 import org.springframework.data.mongodb.core.ExecutableUpdateOperation.ExecutableUpdate;
 import org.springframework.data.mongodb.core.MongoOperations;
 import org.springframework.data.mongodb.core.query.BasicUpdate;
@@ -87,22 +88,26 @@ class UpdateBlocks {
 
 			String updateReference = updateVariableName;
 			Class<?> domainType = context.getRepositoryInformation().getDomainType();
-			builder.addStatement("$1T<$2T> $3L = $4L.update($2T.class)", ExecutableUpdate.class, domainType,
-					context.localVariable("updater"), mongoOpsRef);
+			VariableSnippet updater = Snippet.declare(builder)
+					.variable(ResolvableType.forClassWithGenerics(ExecutableUpdate.class, domainType),
+							context.localVariable("updater"))
+					.as("$L.update($T.class)", mongoOpsRef, domainType);
 
 			Class<?> returnType = ClassUtils.resolvePrimitiveIfNecessary(queryMethod.getReturnedObjectType());
 			if (ReflectionUtils.isVoid(returnType)) {
-				builder.addStatement("$L.matching($L).apply($L).all()", context.localVariable("updater"), queryVariableName,
+				builder.addStatement("$L.matching($L).apply($L).all()", updater.getVariableName(), queryVariableName,
 						updateReference);
 			} else if (ClassUtils.isAssignable(Long.class, returnType)) {
-				builder.addStatement("return $L.matching($L).apply($L).all().getModifiedCount()",
-						context.localVariable("updater"), queryVariableName, updateReference);
+				builder.addStatement("return $L.matching($L).apply($L).all().getModifiedCount()", updater.getVariableName(),
+						queryVariableName, updateReference);
 			} else {
-				builder.addStatement("$T $L = $L.matching($L).apply($L).all().getModifiedCount()", Long.class,
-						context.localVariable("modifiedCount"), context.localVariable("updater"), queryVariableName,
-						updateReference);
+
+				VariableSnippet modifiedCount = Snippet.declare(builder)
+						.variable(Long.class, context.localVariable("modifiedCount"))
+						.as("$L.matching($L).apply($L).all().getModifiedCount()", updater.getVariableName(), queryVariableName,
+								updateReference);
 				builder.addStatement("return $T.convertNumberToTargetClass($L, $T.class)", NumberUtils.class,
-						context.localVariable("modifiedCount"), returnType);
+						modifiedCount.getVariableName(), returnType);
 			}
 
 			return builder.build();
